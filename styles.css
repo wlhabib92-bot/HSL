@@ -843,3 +843,65 @@ body{background:#f7f6f2}
   }
   #accueil .hero-bottom li:last-child{grid-column:1/-1}
 }
+
+
+/* Le titre reste sur la photo; l’image garde son cadrage complet et un léger retrait. */
+#accueil .hero-background{
+  inset:2%;
+  width:96%;
+  height:96%;
+  object-fit:contain;
+}
+@media(max-width:900px){
+  #accueil .hero-background{
+    position:relative;
+    inset:auto;
+    order:0;
+    flex:none;
+    width:96%;
+    height:auto;
+    aspect-ratio:4/3;
+    margin:0 auto;
+    object-fit:contain;
+  }
+  #accueil .hero-copy{
+    display:contents;
+    order:1;
+    max-width:none;
+    padding:0;
+    background:transparent;
+  }
+  #accueil .hero-headline{
+    position:absolute;
+    top:clamp(24px,5vw,40px);
+    left:24px;
+    z-index:3;
+    width:min(84%,620px);
+  }
+  #accueil .hero-headline h1{
+    margin:12px 0 0;
+    font-size:clamp(34px,7.6vw,54px);
+    line-height:1.04;
+    text-shadow:0 3px 16px rgba(0,0,0,.8);
+  }
+  #accueil .hero-support{
+    order:1;
+    width:100%;
+    max-width:none;
+    padding:30px 24px 28px;
+    background:#10151c;
+  }
+  #accueil .hero-bottom{order:2}
+}
+@media(max-width:620px){
+  #accueil .hero-headline{
+    top:22px;
+    left:22px;
+    width:calc(100% - 44px);
+  }
+  #accueil .hero-headline h1{
+    font-size:clamp(32px,8.5vw,40px);
+    margin-top:9px;
+  }
+  #accueil .hero-support{padding:26px 22px 26px}
+}

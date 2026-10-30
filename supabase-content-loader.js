@@ -22,7 +22,7 @@ function mergeDefaults(defaults, remote) {
     console.warn('Supabase indisponible; contenu local utilisé.', error);
   } finally {
     const script = document.createElement('script');
-    script.src = 'script.js?v=20261030-gallery-title';
+    script.src = 'script.js?v=20261030-hero-overlay-responsive';
     document.body.appendChild(script);
   }
 
