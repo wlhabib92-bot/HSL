@@ -13,7 +13,7 @@ Les migrations sont sous `supabase/migrations/`. Elles mettent en place :
 - le bucket Storage `hsl-media` : images publiques en lecture, écriture réservée aux admins.
 - les politiques RLS nécessaires sur les tables et les objets du bucket.
 
-Le site front-end est connecté : Supabase Auth sert au login, le contenu se charge depuis la base, les modifications d’admin sont enregistrées dans la base, les photos importées depuis l’appareil sont téléversées vers Storage (fond d’accueil, cartes, organigramme, services et galerie), les cartes de galerie associent image/projet/localisation, et le formulaire ajoute la demande de devis avant d’ouvrir WhatsApp. Le menu « Nos prestations » filtre les catégories et affiche les éléments du service sélectionné.
+Le site front-end est connecté : Supabase Auth sert au login, le contenu se charge depuis la base, et les modifications de l’admin sont enregistrées dans Supabase. L’import d’une photo attend la fin du téléversement et de la sauvegarde du lien avant d’annoncer la réussite. Le bouton « Sauvegarder maintenant » permet aussi de forcer l’enregistrement. Les pages déjà ouvertes vérifient les mises à jour environ toutes les 15 secondes; au prochain chargement ou retour sur l’onglet, elles récupèrent également le contenu le plus récent. Les photos importées depuis l’appareil sont stockées dans Storage (fond d’accueil, cartes, organigramme, services et galerie), les cartes de galerie associent image/projet/localisation, et le formulaire ajoute la demande de devis avant d’ouvrir WhatsApp. Le menu « Nos prestations » filtre les catégories et affiche les éléments du service sélectionné.
 
 ## Configuration navigateur
 

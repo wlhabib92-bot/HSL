@@ -8,27 +8,72 @@ const ICONS=[['user','Personne'],['helmet','Casque'],['column','Poteau'],['beam'
 const isObj=v=>v&&typeof v==='object'&&!Array.isArray(v);
 const merge=(a,b)=>{if(Array.isArray(a)&&Array.isArray(b))return b.map((v,i)=>merge(a[i],v));if(isObj(a)&&isObj(b)){const o={...a};for(const k in b)o[k]=k in a?merge(a[k],b[k]):b[k];return o}return b};
 const clone=o=>JSON.parse(JSON.stringify(o));
-const DEFAULT=clone(window.HSL_CONTENT);
+const canonical=value=>Array.isArray(value)?value.map(canonical):isObj(value)?Object.keys(value).sort().reduce((out,key)=>(out[key]=canonical(value[key]),out),{}):value;
+const contentSignature=value=>JSON.stringify(canonical(value));
+const stripObsoleteServiceContent=value=>{
+  if(isObj(value?.services))for(const key of ['elements','elementsTitle','elementsSub'])delete value.services[key];
+  return value;
+};
+const DEFAULT=stripObsoleteServiceContent(clone(window.HSL_CONTENT));
 let data=clone(DEFAULT);
 const status=document.getElementById('status');
-const {data:remote,error:loadError}=await window.hslSupabase.from('site_content').select('content').eq('id',1).maybeSingle();
-if(!loadError&&remote&&remote.content){data=merge(DEFAULT,remote.content);status.textContent='Contenu chargé depuis Supabase';}
+const {data:remote,error:loadError}=await window.hslSupabase.from('site_content').select('content,updated_at').eq('id',1).maybeSingle();
+if(!loadError&&remote&&remote.content){data=stripObsoleteServiceContent(merge(DEFAULT,remote.content));status.textContent='Contenu chargé depuis Supabase';}
 else {
-  try{const saved=localStorage.getItem(KEY);if(saved)data=merge(DEFAULT,JSON.parse(saved));}catch(_){}
+  try{const saved=localStorage.getItem(KEY);if(saved)data=stripObsoleteServiceContent(merge(DEFAULT,JSON.parse(saved)));}catch(_){}
   status.textContent='Supabase indisponible : mode local de secours';
   if(loadError)console.error('Chargement Supabase:',loadError.message);
 }
 let saveTimer=null;
-function save(){
+let remoteSignature=remote?.content?contentSignature(remote.content):null;
+let saveRevision=0,savedRevision=0,saveInFlight=null,activeUploads=0;
+function save(immediate=false){
+  saveRevision++;
+  stripObsoleteServiceContent(data);
   try{localStorage.setItem(KEY,JSON.stringify(data));}catch(_){}
   status.textContent='Sauvegarde Supabase en attente…';
   clearTimeout(saveTimer);
-  saveTimer=setTimeout(async()=>{
-    const {error}=await window.hslSupabase.from('site_content').upsert({id:1,content:data,updated_at:new Date().toISOString()},{onConflict:'id'});
-    if(error){status.textContent='Erreur Supabase : '+error.message;console.error('Sauvegarde Supabase:',error.message);}
-    else status.textContent='Enregistré sur Supabase à '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  },650);
+  if(immediate)return flushSave();
+  return new Promise(resolve=>{saveTimer=setTimeout(()=>{saveTimer=null;flushSave().then(resolve);},650);});
 }
+async function flushSave(){
+  if(saveInFlight){await saveInFlight;if(savedRevision<saveRevision)return flushSave();return savedRevision===saveRevision;}
+  const revision=saveRevision,snapshot=stripObsoleteServiceContent(clone(data));
+  saveInFlight=(async()=>{
+    let lastError=null;
+    for(let attempt=0;attempt<3;attempt++){
+      let written,error;
+      try{({data:written,error}=await window.hslSupabase.from('site_content').upsert({id:1,content:snapshot,updated_at:new Date().toISOString()},{onConflict:'id'}).select('updated_at').single());}
+      catch(requestError){lastError=requestError;if(attempt<2)await new Promise(resolve=>setTimeout(resolve,500*(attempt+1)));continue;}
+      if(!error){remoteSignature=contentSignature(snapshot);savedRevision=revision;status.textContent='Enregistré et partagé sur Supabase à '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});return true;}
+      lastError=error;if(attempt<2)await new Promise(resolve=>setTimeout(resolve,500*(attempt+1)));
+    }
+    status.textContent='Erreur Supabase : '+(lastError?.message||'sauvegarde impossible');console.error('Sauvegarde Supabase:',lastError?.message);return false;
+  })();
+  const ok=await saveInFlight;saveInFlight=null;
+  if(ok&&savedRevision<saveRevision)return flushSave();
+  return ok;
+}
+let checkingRemote=false;
+async function checkRemoteContent(){
+  if(checkingRemote||document.visibilityState==='hidden')return;
+  checkingRemote=true;
+  try{
+    const {data:latest,error}=await window.hslSupabase.from('site_content').select('content,updated_at').eq('id',1).maybeSingle();
+    if(error||!latest?.content)return;
+    const signature=contentSignature(latest.content);
+    if(remoteSignature&&signature!==remoteSignature){
+      if(savedRevision===saveRevision&&!saveTimer&&!saveInFlight&&!activeUploads)location.reload();
+      else status.textContent='Modification distante détectée. Vos changements locaux sont conservés; comparez-les avant d’enregistrer ou d’actualiser pour éviter d’écraser une modification faite sur un autre appareil.';
+    }
+  }catch(error){console.warn('Synchronisation Supabase:',error);}
+  finally{checkingRemote=false;}
+}
+window.setInterval(checkRemoteContent,15000);
+window.addEventListener('focus',checkRemoteContent);
+function flushPendingSave(){if(saveTimer){clearTimeout(saveTimer);saveTimer=null;void flushSave();}}
+window.addEventListener('pagehide',flushPendingSave);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushPendingSave();else checkRemoteContent();});
 function el(tag,attrs={},...kids){const n=document.createElement(tag);for(const k in attrs){if(k==='class')n.className=attrs[k];else if(k.startsWith('on'))n[k]=attrs[k];else n.setAttribute(k,attrs[k])}kids.flat().forEach(c=>n.append(c));return n}
 
 /* Champ simple lié à obj[key] */
@@ -47,42 +92,35 @@ function imageField(obj,key,label){
   const box=el('div',{class:'f full'},label);
   const thumb=el('img',{class:'thumb',alt:''});
   const file=el('input',{type:'file',accept:'image/*','aria-label':label});
-  const hint=el('small',{class:'admin-note'},'Choisissez une photo depuis cet appareil (ordinateur ou téléphone). Elle sera optimisée et stockée dans Supabase.');
-  const rm=el('button',{type:'button',class:'abtn small danger',onclick:()=>{obj[key]='';save();refresh()}},'Retirer la photo');
+  const hint=el('small',{class:'admin-note'},'Choisissez une photo depuis cet appareil (ordinateur ou téléphone). Elle sera optimisée, enregistrée dans Supabase et publiée pour tous les visiteurs.');
+  const rm=el('button',{type:'button',class:'abtn small danger',onclick:async()=>{obj[key]='';refresh();const ok=await save(true);if(ok)status.textContent='Photo retirée et modification partagée sur tous les appareils.'}},'Retirer la photo');
   const refresh=()=>{if(obj[key]){thumb.src=obj[key];thumb.hidden=false;rm.hidden=false}else{thumb.removeAttribute('src');thumb.hidden=true;rm.hidden=true}};
-  file.addEventListener('change',()=>{
+  file.addEventListener('change',async()=>{
     const f=file.files&&file.files[0];if(!f)return;
     if(!f.type.startsWith('image/')){status.textContent='Choisissez un fichier image.';file.value='';return}
     if(f.size>25*1024*1024){status.textContent='Cette image dépasse 25 Mo. Choisissez un fichier plus léger.';file.value='';return}
-    const reader=new FileReader();
-    reader.onerror=()=>{status.textContent='Lecture de la photo impossible.';file.value=''};
-    reader.onload=()=>{
-      const im=new Image();im.onerror=()=>{status.textContent='Ce format d’image ne peut pas être ouvert par le navigateur.';file.value=''};
-      im.onload=()=>{
-        const max=1800,scale=Math.min(1,max/Math.max(im.width,im.height));
-        const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(im.width*scale));canvas.height=Math.max(1,Math.round(im.height*scale));
-        const ctx=canvas.getContext('2d');if(!ctx){status.textContent='Préparation de l’image impossible.';return}
-        ctx.drawImage(im,0,0,canvas.width,canvas.height);
-        canvas.toBlob(async blob=>{
-          if(!blob){status.textContent='Compression de la photo impossible.';return}
-          status.textContent='Téléversement de la photo vers Supabase…';
-          try{
-            const token=crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2);
-            const path=`${Date.now()}-${token}.jpg`;
-            const {error}=await window.hslSupabase.storage.from('hsl-media').upload(path,blob,{contentType:'image/jpeg',upsert:false});
-            if(error){status.textContent='Erreur Storage : '+error.message;return}
-            obj[key]=window.hslSupabase.storage.from('hsl-media').getPublicUrl(path).data.publicUrl;
-            refresh();save();file.value='';
-          }catch(error){status.textContent='Téléversement impossible : '+(error.message||error);}
-        },'image/jpeg',.8);
-      };
-      im.src=reader.result;
-    };
-    reader.readAsDataURL(f);
+    activeUploads++;file.disabled=true;status.textContent='Préparation de la photo…';
+    try{
+      const source=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=()=>reject(new Error('Lecture de la photo impossible.'));reader.onload=()=>resolve(reader.result);reader.readAsDataURL(f)});
+      const im=await new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(new Error('Ce format d’image ne peut pas être ouvert par le navigateur.'));image.src=source});
+      const max=1800,scale=Math.min(1,max/Math.max(im.width,im.height));
+      const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(im.width*scale));canvas.height=Math.max(1,Math.round(im.height*scale));
+      const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Préparation de l’image impossible.');
+      ctx.drawImage(im,0,0,canvas.width,canvas.height);
+      const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.82));if(!blob)throw new Error('Compression de la photo impossible.');
+      status.textContent='Téléversement de la photo vers Supabase…';
+      const token=crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2),path=`${Date.now()}-${token}.jpg`;
+      const {error}=await window.hslSupabase.storage.from('hsl-media').upload(path,blob,{contentType:'image/jpeg',upsert:false});
+      if(error)throw new Error('Erreur Storage : '+error.message);
+      obj[key]=window.hslSupabase.storage.from('hsl-media').getPublicUrl(path).data.publicUrl;refresh();
+      status.textContent='Photo téléversée; enregistrement du contenu partagé…';
+      if(!await save(true))throw new Error('La photo est téléversée, mais le contenu n’a pas été enregistré. Cliquez sur « Sauvegarder maintenant » pour réessayer.');
+      status.textContent='Photo enregistrée dans Supabase et disponible sur tous les appareils.';
+    }catch(error){status.textContent=error.message||'Téléversement de la photo impossible.';console.error('Import photo:',error)}
+    finally{activeUploads--;file.disabled=false;file.value=''}
   });
   box.append(thumb,file,hint,rm);refresh();return box;
 }
-
 function stringListField(obj,key,label){
   if(!Array.isArray(obj[key]))obj[key]=[];
   const box=el('div',{class:'f full service-elements-editor'},el('strong',{class:'admin-field-title'},label));
@@ -161,9 +199,8 @@ function build(){
 
     section('Services','crane','services','services',grid(
       field(D.services,'tag','Étiquette de section'),field(D.services,'title1','Titre — ligne 1'),field(D.services,'title2','Titre — ligne 2 (en or)'),field(D.services,'intro','Texte d’introduction','area'),
-      field(D.services,'elementsTitle','Titre du bandeau sombre'),field(D.services,'elementsSub','Sous-titre du bandeau'),field(D.services,'note','Note en bas de section','area'),field(D.services,'bannerImage','Photo de fond du bandeau Services','image')),
-      listOf(D.services.cards,'Cartes de services','Service',[['icon','Icône','icon'],['title','Titre'],['text','Description','area'],['image','Photo de cette prestation','image'],['elements','Éléments affichés dans « Nos prestations »','list']],{icon:'brick',title:'',text:'',image:'',elements:[]}),
-      listOf(D.services.elements,'Éléments du bandeau sombre (poteau, poutre, dalle…)','Élément',[['icon','Icône','icon'],['title','Nom'],['text','Définition','area']],{icon:'column',title:'',text:''})),
+      field(D.services,'note','Note en bas de section','area'),field(D.services,'bannerImage','Photo de fond du bandeau Services','image')),
+      listOf(D.services.cards,'Cartes de services','Service',[['icon','Icône','icon'],['title','Titre'],['text','Description','area'],['image','Photo de cette prestation','image'],['elements','Éléments affichés dans « Nos prestations »','list']],{icon:'brick',title:'',text:'',image:'',elements:[]})),
 
     section('Réalisations','shield','refs','refs',grid(
       field(D.refs,'tag','Étiquette de section'),field(D.refs,'title1','Titre — ligne 1'),field(D.refs,'title2','Titre — ligne 2 (en or)'),field(D.refs,'intro','Texte d’introduction','area'),
@@ -186,6 +223,8 @@ function build(){
   );
 }
 build();
+const saveNow=document.getElementById('save-now');
+if(saveNow)saveNow.addEventListener('click',async()=>{saveNow.disabled=true;status.textContent='Sauvegarde du contenu partagé…';const ok=await save(true);saveNow.disabled=false;if(ok)status.textContent='Toutes les modifications sont enregistrées et partagées sur Supabase.'});
 const first=document.querySelector('#editor .sec');if(first)first.open=true;
 
 document.getElementById('dl').addEventListener('click',()=>{

@@ -6,6 +6,6 @@
   window.hslSupabase = window.supabase.createClient(
     'https://jsxiwkkwxzlshzriukvu.supabase.co',
     'sb_publishable_yJVH3CmlCBejr69bAdhrfg_WLrEqjV3',
-    { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
+    { global: { fetch: (url, init = {}) => fetch(url, { ...init, cache: 'no-store' }) }, auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
   );
 })();

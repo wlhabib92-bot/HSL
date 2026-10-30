@@ -147,30 +147,6 @@ window.HSL_CONTENT = {
         ]
       }
     ],
-    "elementsTitle": "Les éléments d’un ouvrage en béton armé",
-    "elementsSub": "Les quatre notions de base de toute structure.",
-    "elements": [
-      {
-        "icon": "column",
-        "title": "Poteau",
-        "text": "Élément vertical qui transmet les charges de la structure jusqu’aux fondations."
-      },
-      {
-        "icon": "beam",
-        "title": "Poutre",
-        "text": "Élément horizontal qui reprend les charges des planchers et les reporte sur les poteaux."
-      },
-      {
-        "icon": "slab",
-        "title": "Dalle",
-        "text": "Plancher en béton qui forme le sol de chaque niveau du bâtiment."
-      },
-      {
-        "icon": "concrete",
-        "title": "Béton armé",
-        "text": "Béton renforcé par des barres d’acier pour résister aux efforts de traction."
-      }
-    ],
     "note": "Les prestations effectivement proposées et leur périmètre sont à confirmer avec HSL Génie Civil avant publication définitive.",
     "bannerImage": ""
   },
