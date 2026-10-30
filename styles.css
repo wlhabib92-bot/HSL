@@ -754,3 +754,92 @@ body{background:#f7f6f2}
   .org-team .org-role{font-size:9px;line-height:1.4}
   .org-team .org-card h3{font-size:18px}
 }
+
+
+/* ===== Accueil : photo HSL nette et entière (source 4:3) ===== */
+#accueil .hero{
+  min-height:0;
+  height:auto;
+  aspect-ratio:4/3;
+  background:#10151c;
+}
+#accueil .hero::before{display:none}
+#accueil .hero-background{
+  opacity:1;
+  object-fit:cover;
+  object-position:center center;
+}
+#accueil .hero-grid{display:none}
+#accueil .hero-copy{max-width:min(100%,650px)}
+#accueil .hero-copy h1,
+#accueil .hero-lead{
+  text-shadow:0 2px 14px rgba(0,0,0,.58);
+}
+#accueil .hero-lead{max-width:560px;color:#fff}
+#accueil .eyebrow{
+  background:rgba(16,21,28,.38);
+  text-shadow:0 1px 6px rgba(0,0,0,.6);
+}
+#accueil .hero-bottom{
+  border-top:1px solid rgba(255,255,255,.22);
+  background:linear-gradient(0deg,rgba(16,21,28,.34),rgba(16,21,28,0));
+  backdrop-filter:none;
+  color:#fff;
+  text-shadow:0 1px 5px rgba(0,0,0,.7);
+}
+@media(max-width:900px){
+  #accueil .hero{
+    aspect-ratio:auto;
+    min-height:0;
+    height:auto;
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    padding:0;
+    background:#10151c;
+  }
+  #accueil .hero-background{
+    position:relative;
+    inset:auto;
+    z-index:0;
+    display:block;
+    width:100%;
+    height:auto;
+    aspect-ratio:4/3;
+    object-fit:contain;
+    opacity:1;
+    order:0;
+    flex:none;
+  }
+  #accueil .hero-copy{
+    order:1;
+    max-width:none;
+    padding:38px 24px 28px;
+    background:#10151c;
+  }
+  #accueil .hero-copy h1{font-size:clamp(40px,9vw,58px);margin:18px 0}
+  #accueil .hero-bottom{
+    position:relative;
+    left:auto;
+    right:auto;
+    bottom:auto;
+    order:2;
+    flex-wrap:wrap;
+    gap:12px 22px;
+    margin:0;
+    padding:18px 24px;
+    background:#151c25;
+    border-top:1px solid rgba(255,255,255,.14);
+    overflow:visible;
+  }
+}
+@media(max-width:620px){
+  #accueil .hero-copy{padding:30px 22px 26px}
+  #accueil .hero-lead{font-size:16px}
+  #accueil .hero-bottom{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    font-size:13px;
+  }
+  #accueil .hero-bottom li:last-child{grid-column:1/-1}
+}

@@ -7,7 +7,7 @@ window.HSL_CONTENT = {
     "lead": "HSL Génie Civil accompagne vos projets de construction avec une organisation rigoureuse, des équipes techniques et une attention portée à la qualité d’exécution.",
     "cta1": "Demander un devis",
     "cta2": "Découvrir nos références",
-    "backgroundImage": ""
+    "backgroundImage": "https://jsxiwkkwxzlshzriukvu.supabase.co/storage/v1/object/public/hsl-media/1793372011567-d606bd76-8f97-4e12-8126-20eab405ce6a.jpg"
   },
   "about": {
     "tag": "Qui sommes-nous ?",
