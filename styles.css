@@ -845,12 +845,18 @@ body{background:#f7f6f2}
 }
 
 
-/* Le titre reste sur la photo; l’image garde son cadrage complet et un léger retrait. */
-#accueil .hero-background{
-  inset:5%;
-  width:90%;
-  height:90%;
-  object-fit:contain;
+/* Sur ordinateur, réduire le cadre lui-même; la photo remplit tout le cadre. */
+@media(min-width:901px){
+  #accueil .hero{
+    width:80%;
+    margin-inline:auto;
+  }
+  #accueil .hero-background{
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+  }
 }
 @media(max-width:900px){
   #accueil .hero-background{
