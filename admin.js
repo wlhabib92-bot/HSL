@@ -167,9 +167,11 @@ function listOf(arr,title,itemLabel,fields,blank,options={}){
     const item=clone(blank);
     if(options.titleKey){
       const prefix=options.defaultTitlePrefix||itemLabel;
+      const escapedPrefix=prefix.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      const titlePattern=new RegExp('^'+escapedPrefix+'\\s+(\\d+)$','i');
       let nextNumber=arr.length+1;
       arr.forEach(existing=>{
-        const match=String(existing[options.titleKey]||'').match(/(\d+)\s*$/);
+        const match=String(existing[options.titleKey]||'').match(titlePattern);
         if(match)nextNumber=Math.max(nextNumber,Number(match[1])+1);
       });
       item[options.titleKey]=`${prefix} ${nextNumber}`;
