@@ -1,42 +1,53 @@
 # HSL Génie Civil — site vitrine
 
-Site vitrine responsive en français, palette deux couleurs : bleu nuit + or (celles du logo), avec :
-- Accueil avec organigramme intégré, présentation, services, réalisations, devis et contact
-- Logo HSL fourni
-- Bouton WhatsApp au numéro `+221 77 876 20 82`
-- Formulaire de devis qui prépare un message WhatsApp
-- Page `admin.html` de démonstration locale
+Site responsive en français, palette bleu nuit et or, avec accueil, organigramme, présentation, services, réalisations, demande de devis et contact.
 
-## Ouvrir le site
-Ouvrir `index.html` dans un navigateur. Pour tester correctement en local, utiliser un petit serveur local (par exemple l’extension Live Server de VS Code).
+## Supabase connecté
 
-## Important avant publication
-Cette livraison est un prototype front-end statique. Le formulaire de devis ouvre WhatsApp : il n’enregistre pas les demandes dans une base de données. `admin.html` est une démonstration locale uniquement : les réalisations y sont stockées dans le navigateur courant et ne sont pas publiées pour les visiteurs. **Ne pas présenter cette page comme un back-office sécurisé.**
+Le site utilise le projet Supabase `hsl` (`jsxiwkkwxzlshzriukvu`) :
 
-Pour la version de production, recommandation :
-1. Déployer un site statique sur Cloudflare Pages (ou un hébergeur équivalent).
-2. Acheter et connecter un domaine après vérification de disponibilité.
-3. Ajouter Supabase pour la base de données, l’authentification administrateur et le stockage des photos.
-4. Configurer des règles RLS strictes : seuls les administrateurs authentifiés peuvent créer/modifier/supprimer des réalisations et consulter les demandes.
-5. Ajouter une protection antispam, des sauvegardes et un test mobile avant publication.
+- Le contenu commun du site est lu depuis `public.site_content` ; l’admin le sauvegarde directement dans la base.
+- L’accès à `admin.html` est géré par Supabase Auth. Le compte `hsl.geniecivil@gmail.com` est autorisé comme administrateur.
+- Les photos sélectionnées depuis l’administration sont téléversées dans le bucket Storage `hsl-media`.
+- Le formulaire de devis insère les coordonnées et le descriptif dans `public.quote_requests`, puis ouvre WhatsApp pour confirmer l’envoi à HSL.
+- La lecture du contenu et l’accès aux demandes sont contrôlés par les règles RLS ; les demandes et la liste d’administrateurs ne sont pas accessibles publiquement.
 
-## Références et contenu
-Le document fourni décrit une organisation de chantier, du personnel technique, du gros œuvre/maçonnerie/enduits, des menuiseries, revêtements, lots électriques/CVC/VMC, plomberie-sanitaire et étanchéité. Le site présente ces domaines de façon prudente. Les références de chantier ne sont pas inventées : remplacer les emplacements prévus par des photos et descriptions confirmées par HSL.
+L’URL et la **clé publiable** sont dans `supabase-client.js`. Cette clé est faite pour le navigateur et les droits restent contrôlés par RLS. Ne jamais mettre une clé Supabase `secret` ou `service_role` dans un fichier public.
 
-## Coordonnées utilisées
-- Entreprise : HSL Génie Civil
-- Téléphone / WhatsApp : +221 77 876 20 82
-- Email : hsl.geniecivil@gmail.com
-- Zone : Dakar, Sénégal
-- Slogan : Bâtir aujourd’hui pour demain
+Les migrations SQL sont conservées sous `supabase/migrations/`.
 
-## Modifier le contenu depuis l’administration
-- Ouvrir `admin.html` : les sections du site ont des champs modifiables. Les noms, fonctions et photos des membres de l’organigramme intégré à l’accueil se règlent depuis la section « Organigramme » ; les icônes servent de remplacement tant qu’aucune photo n’est choisie.
-- Les autres sections ont leurs champs modifiables, leurs éléments ajoutables / supprimables et une case « Afficher cette section » lorsqu’elle est applicable.
-- Les modifications sont enregistrées dans le navigateur et visibles sur le site ouvert depuis le même appareil.
-- Pour publier à tous les visiteurs : bouton « Télécharger content.js », puis remplacer `content.js` sur l’hébergement.
+## Lancer le site
+
+Ne pas ouvrir directement les pages en `file://`. Lancer un serveur local à la racine du dossier, par exemple :
+
+```bash
+python3 -m http.server 8000
+```
+
+Puis ouvrir `http://localhost:8000`. On peut aussi utiliser Live Server dans VS Code. Le serveur local doit être autorisé dans les URL de redirection Supabase si des liens de confirmation ou de récupération de mot de passe sont activés.
 
 ## Connexion à l’administration
-- Le bouton cadenas dans l’en-tête ouvre `login.html`.
-- Les identifiants initiaux de démonstration ne sont pas publiés dans ce guide. Configurez des identifiants propres à votre installation.
-- Cette protection est côté navigateur (démonstration) et ne sécurise pas réellement le contenu. Ne publiez pas l’espace d’administration comme s’il était protégé ; avant toute utilisation publique, prévoir une vraie authentification serveur (ex. Supabase Auth).
+
+Ouvrir `login.html` ou utiliser le cadenas du site. Se connecter avec l’adresse et le mot de passe du compte créé dans Supabase Auth. L’inscription publique n’est pas nécessaire : les comptes d’administration sont créés dans le Dashboard Supabase puis ajoutés à `public.hsl_admins` par un propriétaire autorisé.
+
+Le formulaire dans « Sécurité » permet de changer le mot de passe Supabase Auth. La liste des demandes de devis apparaît dans le panneau d’administration ; leur statut peut être mis à jour.
+
+## Modifier et publier le contenu
+
+Ouvrir `admin.html`, modifier les champs et laisser la sauvegarde se terminer (le statut confirme « Enregistré sur Supabase »). Les changements sont partagés avec les visiteurs dès qu’ils rechargent le site. Le bouton « Télécharger une sauvegarde » exporte le JSON du contenu ; ce fichier n’est pas nécessaire à la publication normale.
+
+Les photos sélectionnées depuis l’appareil dans l’admin passent par Supabase Storage : fond d’accueil, photos des trois cartes « À propos », portraits des huit membres, fond Services, cartes des quatre prestations et réalisations. Les noms et fonctions des huit membres sont modifiables ; les éléments affichés dans « Nos prestations » sont aussi modifiables pour chaque catégorie. Les cartes de galerie associent directement l’image, le nom du projet et sa localisation. Les images et références doivent être vérifiées par HSL avant publication.
+
+## Demandes de devis
+
+Le formulaire enregistre la demande dans Supabase, puis prépare le texte WhatsApp. Le visiteur doit encore appuyer sur Envoyer dans WhatsApp. Les demandes restent privées et ne sont visibles que par les administrateurs autorisés.
+
+Avant une publication large, prévoir une protection antispam/rate-limit adaptée, vérifier les URL d’authentification de production, faire un test mobile et activer une stratégie de sauvegarde Supabase. Dans Supabase Auth, activer aussi la protection contre les mots de passe compromis (actuellement désactivée selon le contrôle de sécurité).
+
+## Coordonnées de l’entreprise
+
+- HSL Génie Civil
+- WhatsApp : +221 77 876 20 82 et +221 77 261 43 71
+- E-mail : hsl.geniecivil@gmail.com
+- Zone : Cambéréne / Dakar, Sénégal
+- Slogan : « Bâtir aujourd’hui pour demain »

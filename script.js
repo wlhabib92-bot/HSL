@@ -1,30 +1,19 @@
-/* ===== Contenu modifiable : content.js + modifications faites dans admin.html ===== */
-const STORE_KEY='hsl-content-v1';
+/* ===== Contenu partagé chargé depuis Supabase (content.js sert de secours) ===== */
 const e=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ic=(n,c='')=>`<svg class="icon ${c}"><use href="#i-${e(n)}"/></svg>`;
-const isObj=v=>v&&typeof v==='object'&&!Array.isArray(v);
-function merge(a,b){const o={...a};for(const k in b){o[k]=isObj(a[k])&&isObj(b[k])?merge(a[k],b[k]):b[k]}return o}
 let C=window.HSL_CONTENT||{};
-try{
-  const st=localStorage.getItem(STORE_KEY);
-  if(st){
-    C=merge(C,JSON.parse(st));
-    if(C.contact&&C.contact.zone==='Dakar, Sénégal'){
-      C.contact.zone='Cambéréne / Dakar, Sénégal';
-      localStorage.setItem(STORE_KEY,JSON.stringify(C));
-    }
-  }
-}catch(_){}
 const $=s=>document.querySelector(s);
 const digits=s=>String(s||'').replace(/\D/g,'');
 
 function renderContent(){
   if(!C.hero)return;
   const h=C.hero;
+  const hero=$('.hero');let heroImage=hero.querySelector('.hero-background');
+  if(h.backgroundImage){if(!heroImage){heroImage=document.createElement('img');heroImage.className='hero-background';heroImage.alt='';heroImage.setAttribute('aria-hidden','true');hero.prepend(heroImage)}heroImage.src=h.backgroundImage}else if(heroImage)heroImage.remove();
   $('.hero-copy').innerHTML=`<p class="eyebrow">${ic('helmet')} ${e(h.eyebrow)}</p><h1>${e(h.title1)}<br><em>${e(h.title2)}</em></h1><p class="hero-lead">${e(h.lead)}</p><div class="hero-actions"><a class="btn btn-gold" href="#devis">${e(h.cta1)} ${ic('arrow','ico-arrow')}</a><a class="btn btn-outline" href="#realisations">${e(h.cta2)}</a></div>`;
 
   const a=C.about;
-  $('#apropos .wrap').innerHTML=`<div class="section-tag">${ic('helmet')} ${e(a.tag)}</div><div class="intro-content"><h2>${e(a.title1)}<br><em>${e(a.title2)}</em></h2><div class="intro-text">${a.p1?`<p>${e(a.p1)}</p>`:''}${a.p2?`<p>${e(a.p2)}</p>`:''}${a.link?`<a class="text-link" href="#services">${e(a.link)} ${ic('arrow-r')}</a>`:''}</div></div>${a.principles.length?`<div class="principles">${a.principles.map(p=>`<article><div class="principle-image" aria-hidden="true"><div class="ico-tile">${ic(p.icon)}</div></div><div class="principle-content"><h3>${e(p.title)}</h3><p>${e(p.text)}</p>${ic('arrow','principle-arrow')}</div></article>`).join('')}</div>`:''}`;
+  $('#apropos .wrap').innerHTML=`<div class="section-tag">${ic('helmet')} ${e(a.tag)}</div><div class="intro-content"><h2>${e(a.title1)}<br><em>${e(a.title2)}</em></h2><div class="intro-text">${a.p1?`<p>${e(a.p1)}</p>`:''}${a.p2?`<p>${e(a.p2)}</p>`:''}${a.link?`<a class="text-link" href="#services">${e(a.link)} ${ic('arrow-r')}</a>`:''}</div></div>${a.principles.length?`<div class="principles">${a.principles.map(p=>`<article><div class="principle-image" aria-hidden="true">${p.photo?`<img class="principle-photo" src="${e(p.photo)}" alt="">`:''}<div class="ico-tile">${ic(p.icon)}</div></div><div class="principle-content"><h3>${e(p.title)}</h3><p>${e(p.text)}</p>${ic('arrow','principle-arrow')}</div></article>`).join('')}</div>`:''}`;
 
   const o=C.orgChart;
   const orgCard=(member,lead=false)=>`<article class="org-card${lead?' org-card-lead':''}"><div class="org-avatar">${member.photo?`<img src="${e(member.photo)}" alt="Photo de ${e(member.name||member.role)}">`:ic(member.icon||'user')}</div><div class="org-card-copy"><span class="org-role">${e(member.role)}</span><h3>${e(member.name||'Nom à renseigner')}</h3></div></article>`;
@@ -36,19 +25,26 @@ function renderContent(){
   }
 
   const s=C.services;
-  $('#services .wrap').innerHTML=`<div class="section-heading services-banner"><div><div class="section-tag">${ic('crane')} ${e(s.tag)}</div><h2>${e(s.title1)}<br><em>${e(s.title2)}</em></h2></div><p>${e(s.intro)}</p></div>`
-   +(s.cards.length?`<div class="services-layout"><nav class="service-sidebar" aria-label="Catégories de services"><p class="service-sidebar-title">Nos prestations</p><a class="service-filter active" href="#service-cards">${ic('helmet')} Tous les services ${ic('arrow-r','service-filter-arrow')}</a>${s.cards.map((c,i)=>`<a class="service-filter" href="#service-item-${i+1}">${ic(c.icon)} ${e(c.title)}</a>`).join('')}</nav><div class="service-grid" id="service-cards">${s.cards.map((c,i)=>`<article class="service-card" id="service-item-${i+1}"><div class="service-image service-image-${i%4+1}" aria-hidden="true"></div><div class="service-card-content"><h3>${e(c.title)}</h3><p>${e(c.text)}</p><a class="service-more" href="#devis">En savoir plus ${ic('arrow-r')}</a></div></article>`).join('')}</div></div>`:'')
+  const bannerImage=s.bannerImage?`<img class="services-banner-photo" src="${e(s.bannerImage)}" alt="" aria-hidden="true">`:'';
+  $('#services .wrap').innerHTML=`<div class="section-heading services-banner">${bannerImage}<div><div class="section-tag">${ic('crane')} ${e(s.tag)}</div><h2>${e(s.title1)}<br><em>${e(s.title2)}</em></h2></div><p>${e(s.intro)}</p></div>`
+   +(s.cards.length?`<div class="services-layout"><nav class="service-sidebar" aria-label="Catégories de services"><p class="service-sidebar-title">Nos prestations</p><button type="button" class="service-filter active" data-service-index="all" aria-pressed="true">${ic('helmet')} Toutes les prestations</button>${s.cards.map((c,i)=>`<button type="button" class="service-filter" data-service-index="${i}" aria-pressed="false">${ic(c.icon)} ${e(c.title)}</button>`).join('')}<div class="service-elements-panel" id="service-elements" aria-live="polite"></div></nav><div class="service-grid" id="service-cards">${s.cards.map((c,i)=>`<article class="service-card" id="service-item-${i+1}" data-service-index="${i}"><div class="service-image service-image-${i%4+1}" aria-hidden="true">${c.image?`<img src="${e(c.image)}" alt="">`:''}</div><div class="service-card-content"><h3>${e(c.title)}</h3><p>${e(c.text)}</p><a class="service-more" href="#devis">En savoir plus ${ic('arrow-r')}</a></div></article>`).join('')}</div></div>`:'')
    +(s.note?`<p class="small-disclaimer">${e(s.note)}</p>`:'');
-  document.querySelectorAll('#services .service-filter').forEach(filter=>filter.addEventListener('click',()=>{
-    document.querySelectorAll('#services .service-filter').forEach(item=>item.classList.remove('active'));
-    filter.classList.add('active');
-  }));
+  const serviceFilters=[...document.querySelectorAll('#services .service-filter')];
+  const serviceCards=[...document.querySelectorAll('#services .service-card')];
+  const serviceElements=document.getElementById('service-elements');
+  function selectService(index){
+    serviceFilters.forEach(button=>{const active=button.dataset.serviceIndex===String(index);button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active))});
+    const serviceGrid=document.getElementById('service-cards');if(serviceGrid)serviceGrid.classList.toggle('is-filtered',index!=='all');
+    serviceCards.forEach(card=>{card.hidden=index!=='all'&&card.dataset.serviceIndex!==String(index)});
+    const groups=index==='all'?s.cards.map(card=>card):[s.cards[Number(index)]].filter(Boolean);
+    serviceElements.innerHTML=groups.map(card=>`<section class="service-elements-group"><strong>${e(card.title)}</strong>${card.elements&&card.elements.length?`<ul>${card.elements.map(item=>`<li>${e(item)}</li>`).join('')}</ul>`:'<p>Éléments à renseigner dans l’administration.</p>'}</section>`).join('');
+  }
+  serviceFilters.forEach(button=>button.addEventListener('click',()=>selectService(button.dataset.serviceIndex)));
+  if(serviceElements)selectService('all');
 
   const r=C.refs;
-  const slots=r.items.length?r.items.map(it=>{
-    const photo=it.image?` has-photo" style="background-image:linear-gradient(180deg,rgba(16,21,28,.05) 35%,rgba(16,21,28,.92)),url('${e(it.image)}')`:'';
-    return `<div class="reference-slot${photo}">${it.image?'':ic('helmet','slot-ico')}<span>${e(it.location)}</span><strong>${e(it.title)}</strong>${it.description?`<p>${e(it.description)}</p>`:''}</div>`}).join('')
-   :['helmet','crane','slab'].map((n,i)=>`<div class="reference-slot">${ic(n,'slot-ico')}<span>Photo à ajouter</span><strong>Projet / chantier 0${i+1}</strong></div>`).join('');
+  const slots=r.items.length?r.items.map(it=>`<article class="reference-slot${it.image?' has-photo':''}">${it.image?`<img class="reference-photo" src="${e(it.image)}" alt="Photo du projet ${e(it.title)} à ${e(it.location)}" loading="lazy">`:ic('helmet','slot-ico')}<div class="reference-copy"><span>${e(it.location)}</span><strong>${e(it.title)}</strong>${it.description?`<p>${e(it.description)}</p>`:''}</div></article>`).join('')
+   :['helmet','crane','slab'].map((n,i)=>`<article class="reference-slot">${ic(n,'slot-ico')}<div class="reference-copy"><span>Photo à ajouter</span><strong>Projet / chantier 0${i+1}</strong></div></article>`).join('');
   $('#realisations .wrap').innerHTML=`<div class="section-heading"><div><div class="section-tag">${ic('shield')} ${e(r.tag)}</div><h2>${e(r.title1)}<br><em>${e(r.title2)}</em></h2></div><p>${e(r.intro)}</p></div>`
    +(r.items.length?'':`<div class="reference-notice"><div class="ico-tile">${ic('plus')}</div><div><h3>${e(r.noticeTitle)}</h3><p>${e(r.noticeText)}</p><a class="text-link" href="#contact">Envoyer vos références ${ic('arrow-r')}</a></div></div>`)
    +`<div class="reference-slots">${slots}</div>`;
@@ -128,17 +124,25 @@ if('IntersectionObserver' in window){
 
 /* ===== Année du pied de page ===== */
 
-/* ===== Formulaire de devis → message WhatsApp ===== */
+/* ===== Demande de devis : insertion Supabase puis ouverture WhatsApp ===== */
 const form=document.getElementById('quote-form');
 if(form){
-  form.addEventListener('submit',e=>{
-    e.preventDefault();
-    const d=new FormData(form);
-    const err=document.getElementById('quote-error');
-    const phone=String(d.get('phone')||'').trim();
-    if(phone.length<6){err.textContent='Veuillez saisir un numéro de téléphone valide.';return}
-    const msg=`Bonjour HSL Génie Civil, je souhaite demander un devis.%0A%0A*Nom :* ${encodeURIComponent(d.get('name'))}%0A*Tél. :* ${encodeURIComponent(phone)}%0A*Type de projet :* ${encodeURIComponent(d.get('project'))}%0A*Localisation :* ${encodeURIComponent(d.get('location'))}%0A*Description :* ${encodeURIComponent(d.get('details'))}`;
-    err.textContent='';
-    window.open(`https://wa.me/${digits((C.contact||{}).whatsapp)||'221778762082'}?text=${msg}`,'_blank','noopener');
+  form.addEventListener('submit',async event=>{
+    event.preventDefault();
+    const data=new FormData(form),errorNode=document.getElementById('quote-error'),button=form.querySelector('button[type="submit"]');
+    const request={name:String(data.get('name')||'').trim(),phone:String(data.get('phone')||'').trim(),project:String(data.get('project')||'').trim(),location:String(data.get('location')||'').trim(),details:String(data.get('details')||'').trim()};
+    if(request.phone.replace(/\D/g,'').length<6){errorNode.textContent='Veuillez saisir un numéro de téléphone valide.';return}
+    const whatsapp=digits((C.contact||{}).whatsapp)||'221778762082';
+    const message=`Bonjour HSL Génie Civil, je souhaite demander un devis.\n\nNom : ${request.name}\nTéléphone : ${request.phone}\nType de projet : ${request.project}\nLocalisation : ${request.location}\nDescription : ${request.details}`;
+    const whatsappUrl=`https://wa.me/${whatsapp}?text=${encodeURIComponent(message)}`;
+    const popup=window.open('about:blank','_blank');if(popup)popup.opener=null;
+    button.disabled=true;errorNode.classList.remove('is-success');errorNode.textContent='Enregistrement de votre demande…';
+    let saveError=null;
+    try{if(!window.hslSupabase)throw new Error('Connexion Supabase indisponible.');({error:saveError}=await window.hslSupabase.from('quote_requests').insert(request));}
+    catch(error){saveError=error}
+    if(saveError){console.error('Enregistrement du devis impossible:',saveError.message||saveError);errorNode.textContent='La demande n’a pas pu être enregistrée dans la base. WhatsApp va tout de même s’ouvrir pour transmettre votre message.';}
+    else{errorNode.classList.add('is-success');errorNode.textContent='Demande enregistrée. WhatsApp va s’ouvrir ; appuyez sur Envoyer pour la transmettre à HSL.';form.reset();}
+    button.disabled=false;
+    if(popup)popup.location.href=whatsappUrl;else window.location.href=whatsappUrl;
   });
 }

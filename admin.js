@@ -1,25 +1,33 @@
+if(!(await window.HSLAuth.isLogged())){
+  location.replace('login.html');
+  throw new Error('Session administrateur requise.');
+}
+document.body.style.visibility='visible';
 const KEY='hsl-content-v1';
 const ICONS=[['user','Personne'],['helmet','Casque'],['column','Poteau'],['beam','Poutre'],['slab','Dalle'],['concrete','Béton armé'],['brick','Brique / maçonnerie'],['roller','Rouleau / peinture'],['bolt','Électricité'],['crane','Grue'],['square','Équerre'],['plan','Plan / dossier'],['clock','Délais'],['shield','Garantie']];
 const isObj=v=>v&&typeof v==='object'&&!Array.isArray(v);
-const merge=(a,b)=>{const o={...a};for(const k in b)o[k]=isObj(a[k])&&isObj(b[k])?merge(a[k],b[k]):b[k];return o};
+const merge=(a,b)=>{if(Array.isArray(a)&&Array.isArray(b))return b.map((v,i)=>merge(a[i],v));if(isObj(a)&&isObj(b)){const o={...a};for(const k in b)o[k]=k in a?merge(a[k],b[k]):b[k];return o}return b};
 const clone=o=>JSON.parse(JSON.stringify(o));
 const DEFAULT=clone(window.HSL_CONTENT);
 let data=clone(DEFAULT);
-try{
-  const s=localStorage.getItem(KEY);
-  if(s){
-    data=merge(data,JSON.parse(s));
-    if(data.contact&&data.contact.zone==='Dakar, Sénégal'){
-      data.contact.zone='Cambéréne / Dakar, Sénégal';
-      localStorage.setItem(KEY,JSON.stringify(data));
-    }
-  }
-}catch(_){}
 const status=document.getElementById('status');
-
+const {data:remote,error:loadError}=await window.hslSupabase.from('site_content').select('content').eq('id',1).maybeSingle();
+if(!loadError&&remote&&remote.content){data=merge(DEFAULT,remote.content);status.textContent='Contenu chargé depuis Supabase';}
+else {
+  try{const saved=localStorage.getItem(KEY);if(saved)data=merge(DEFAULT,JSON.parse(saved));}catch(_){}
+  status.textContent='Supabase indisponible : mode local de secours';
+  if(loadError)console.error('Chargement Supabase:',loadError.message);
+}
+let saveTimer=null;
 function save(){
-  try{localStorage.setItem(KEY,JSON.stringify(data));status.textContent='Enregistré sur cet appareil à '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
-  catch(_){status.textContent='Enregistrement impossible : stockage plein (photos trop lourdes ?)'}
+  try{localStorage.setItem(KEY,JSON.stringify(data));}catch(_){}
+  status.textContent='Sauvegarde Supabase en attente…';
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(async()=>{
+    const {error}=await window.hslSupabase.from('site_content').upsert({id:1,content:data,updated_at:new Date().toISOString()},{onConflict:'id'});
+    if(error){status.textContent='Erreur Supabase : '+error.message;console.error('Sauvegarde Supabase:',error.message);}
+    else status.textContent='Enregistré sur Supabase à '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  },650);
 }
 function el(tag,attrs={},...kids){const n=document.createElement(tag);for(const k in attrs){if(k==='class')n.className=attrs[k];else if(k.startsWith('on'))n[k]=attrs[k];else n.setAttribute(k,attrs[k])}kids.flat().forEach(c=>n.append(c));return n}
 
@@ -29,6 +37,7 @@ function field(obj,key,label,type='text',full=false){
   if(type==='area')input=el('textarea',{rows:3});
   else if(type==='icon'){input=el('select');ICONS.forEach(([v,l])=>input.append(el('option',{value:v},l)))}
   else if(type==='image'){return imageField(obj,key,label)}
+  else if(type==='list'){return stringListField(obj,key,label)}
   else input=el('input',{type:'text'});
   input.value=obj[key]??'';
   input.addEventListener(type==='icon'?'change':'input',()=>{obj[key]=input.value;save()});
@@ -37,20 +46,59 @@ function field(obj,key,label,type='text',full=false){
 function imageField(obj,key,label){
   const box=el('div',{class:'f full'},label);
   const thumb=el('img',{class:'thumb',alt:''});
-  const refresh=()=>{if(obj[key]){thumb.src=obj[key];thumb.hidden=false;rm.hidden=false}else{thumb.hidden=true;rm.hidden=true}};
-  const file=el('input',{type:'file',accept:'image/*'});
+  const file=el('input',{type:'file',accept:'image/*','aria-label':label});
+  const hint=el('small',{class:'admin-note'},'Choisissez une photo depuis cet appareil (ordinateur ou téléphone). Elle sera optimisée et stockée dans Supabase.');
   const rm=el('button',{type:'button',class:'abtn small danger',onclick:()=>{obj[key]='';save();refresh()}},'Retirer la photo');
+  const refresh=()=>{if(obj[key]){thumb.src=obj[key];thumb.hidden=false;rm.hidden=false}else{thumb.removeAttribute('src');thumb.hidden=true;rm.hidden=true}};
   file.addEventListener('change',()=>{
-    const f=file.files[0];if(!f)return;
-    const r=new FileReader();
-    r.onload=()=>{const im=new Image();im.onload=()=>{
-      const max=900,sc=Math.min(1,max/Math.max(im.width,im.height));
-      const c=document.createElement('canvas');c.width=im.width*sc;c.height=im.height*sc;
-      c.getContext('2d').drawImage(im,0,0,c.width,c.height);
-      obj[key]=c.toDataURL('image/jpeg',.72);save();refresh();
-    };im.src=r.result};r.readAsDataURL(f);
+    const f=file.files&&file.files[0];if(!f)return;
+    if(!f.type.startsWith('image/')){status.textContent='Choisissez un fichier image.';file.value='';return}
+    if(f.size>25*1024*1024){status.textContent='Cette image dépasse 25 Mo. Choisissez un fichier plus léger.';file.value='';return}
+    const reader=new FileReader();
+    reader.onerror=()=>{status.textContent='Lecture de la photo impossible.';file.value=''};
+    reader.onload=()=>{
+      const im=new Image();im.onerror=()=>{status.textContent='Ce format d’image ne peut pas être ouvert par le navigateur.';file.value=''};
+      im.onload=()=>{
+        const max=1800,scale=Math.min(1,max/Math.max(im.width,im.height));
+        const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(im.width*scale));canvas.height=Math.max(1,Math.round(im.height*scale));
+        const ctx=canvas.getContext('2d');if(!ctx){status.textContent='Préparation de l’image impossible.';return}
+        ctx.drawImage(im,0,0,canvas.width,canvas.height);
+        canvas.toBlob(async blob=>{
+          if(!blob){status.textContent='Compression de la photo impossible.';return}
+          status.textContent='Téléversement de la photo vers Supabase…';
+          try{
+            const token=crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2);
+            const path=`${Date.now()}-${token}.jpg`;
+            const {error}=await window.hslSupabase.storage.from('hsl-media').upload(path,blob,{contentType:'image/jpeg',upsert:false});
+            if(error){status.textContent='Erreur Storage : '+error.message;return}
+            obj[key]=window.hslSupabase.storage.from('hsl-media').getPublicUrl(path).data.publicUrl;
+            refresh();save();file.value='';
+          }catch(error){status.textContent='Téléversement impossible : '+(error.message||error);}
+        },'image/jpeg',.8);
+      };
+      im.src=reader.result;
+    };
+    reader.readAsDataURL(f);
   });
-  box.append(thumb,file,rm);refresh();return box;
+  box.append(thumb,file,hint,rm);refresh();return box;
+}
+
+function stringListField(obj,key,label){
+  if(!Array.isArray(obj[key]))obj[key]=[];
+  const box=el('div',{class:'f full service-elements-editor'},el('strong',{class:'admin-field-title'},label));
+  const rows=el('div');
+  function draw(){
+    rows.innerHTML='';
+    obj[key].forEach((value,i)=>{
+      const input=el('input',{type:'text','aria-label':`${label} — élément ${i+1}`});input.value=value;
+      input.addEventListener('input',()=>{obj[key][i]=input.value;save()});
+      const remove=el('button',{type:'button',class:'abtn small danger',onclick:()=>{obj[key].splice(i,1);save();draw()}},'Supprimer');
+      rows.append(el('div',{class:'admin-line-row'},input,remove));
+    });
+  }
+  draw();
+  box.append(rows,el('button',{type:'button',class:'abtn small',onclick:()=>{obj[key].push('');save();draw()}},'+ Ajouter un élément'));
+  return box;
 }
 /* Liste d’objets (ajout / suppression) */
 function listOf(arr,title,itemLabel,fields,blank){
@@ -100,12 +148,12 @@ function build(){
   ed.append(
     section('Accueil — bandeau principal','helmet','hero',null,grid(
       field(D.hero,'eyebrow','Petit texte au-dessus du titre'),field(D.hero,'title1','Titre — ligne 1'),field(D.hero,'title2','Titre — ligne 2 (en or)'),
-      field(D.hero,'cta1','Bouton principal'),field(D.hero,'cta2','Bouton secondaire'),field(D.hero,'lead','Texte d’introduction','area'))),
+      field(D.hero,'cta1','Bouton principal'),field(D.hero,'cta2','Bouton secondaire'),field(D.hero,'lead','Texte d’introduction','area'),field(D.hero,'backgroundImage','Photo de fond de l’accueil','image'))),
 
     section('À propos','plan','about','about',grid(
       field(D.about,'tag','Étiquette de section'),field(D.about,'link','Texte du lien'),field(D.about,'title1','Titre — ligne 1'),field(D.about,'title2','Titre — ligne 2 (en or)'),
       field(D.about,'p1','Paragraphe 1','area'),field(D.about,'p2','Paragraphe 2','area')),
-      listOf(D.about.principles,'Points forts','Point',[['icon','Icône','icon'],['title','Titre'],['text','Texte','area']],{icon:'shield',title:'',text:''})),
+      listOf(D.about.principles,'Points forts','Point',[['icon','Icône','icon'],['title','Titre'],['text','Texte','area'],['photo','Photo de la carte','image']],{icon:'shield',title:'',text:'',photo:''})),
 
     section('Organigramme','user','orgChart','orgChart',grid(
       field(D.orgChart,'tag','Étiquette de section'),field(D.orgChart,'title','Titre'),field(D.orgChart,'intro','Texte d’introduction','area')),
@@ -113,8 +161,8 @@ function build(){
 
     section('Services','crane','services','services',grid(
       field(D.services,'tag','Étiquette de section'),field(D.services,'title1','Titre — ligne 1'),field(D.services,'title2','Titre — ligne 2 (en or)'),field(D.services,'intro','Texte d’introduction','area'),
-      field(D.services,'elementsTitle','Titre du bandeau sombre'),field(D.services,'elementsSub','Sous-titre du bandeau'),field(D.services,'note','Note en bas de section','area')),
-      listOf(D.services.cards,'Cartes de services','Service',[['icon','Icône','icon'],['title','Titre'],['text','Description','area']],{icon:'brick',title:'',text:''}),
+      field(D.services,'elementsTitle','Titre du bandeau sombre'),field(D.services,'elementsSub','Sous-titre du bandeau'),field(D.services,'note','Note en bas de section','area'),field(D.services,'bannerImage','Photo de fond du bandeau Services','image')),
+      listOf(D.services.cards,'Cartes de services','Service',[['icon','Icône','icon'],['title','Titre'],['text','Description','area'],['image','Photo de cette prestation','image'],['elements','Éléments affichés dans « Nos prestations »','list']],{icon:'brick',title:'',text:'',image:'',elements:[]}),
       listOf(D.services.elements,'Éléments du bandeau sombre (poteau, poutre, dalle…)','Élément',[['icon','Icône','icon'],['title','Nom'],['text','Définition','area']],{icon:'column',title:'',text:''})),
 
     section('Réalisations','shield','refs','refs',grid(
@@ -138,33 +186,55 @@ function build(){
   );
 }
 build();
+const first=document.querySelector('#editor .sec');if(first)first.open=true;
 
 document.getElementById('dl').addEventListener('click',()=>{
-  const txt='/* Contenu du site HSL Génie Civil — généré depuis admin.html */\nwindow.HSL_CONTENT = '+JSON.stringify(data,null,2)+';\n';
-  const a=el('a',{href:URL.createObjectURL(new Blob([txt],{type:'text/javascript'})),download:'content.js'});
+  const txt='/* Sauvegarde du contenu HSL — exportée depuis Supabase */\nwindow.HSL_CONTENT = '+JSON.stringify(data,null,2)+';\n';
+  const a=el('a',{href:URL.createObjectURL(new Blob([txt],{type:'text/javascript'})),download:'content-backup.js'});
   document.body.append(a);a.click();a.remove();
-  status.textContent='content.js téléchargé : remplacez-le sur l’hébergement pour publier';
+  status.textContent='Sauvegarde JSON téléchargée';
 });
 document.getElementById('reset').addEventListener('click',()=>{
-  if(confirm('Effacer toutes vos modifications et revenir au contenu du fichier content.js ?')){
-    try{localStorage.removeItem(KEY)}catch(_){}
-    data=clone(DEFAULT);build();status.textContent='Contenu réinitialisé';
-  }
+  if(confirm('Remplacer le contenu Supabase par les valeurs initiales du site ?')){data=clone(DEFAULT);build();save()}
 });
-
-/* Section 1 ouverte par défaut + outils */
-const first=document.querySelector('#editor .sec');if(first)first.open=true;
 document.getElementById('expand').addEventListener('click',function(){
   const all=[...document.querySelectorAll('#editor .sec')],open=all.some(d=>!d.open);
   all.forEach(d=>d.open=open);this.textContent=open?'Tout replier':'Tout déplier';
 });
-document.getElementById('logout').addEventListener('click',()=>{HSLAuth.logout();location.href='login.html'});
-document.getElementById('pw-user').value=HSLAuth.currentUser();
-document.getElementById('pw-form').addEventListener('submit',e=>{
+document.getElementById('logout').addEventListener('click',async()=>{await window.HSLAuth.logout();location.href='login.html'});
+window.HSLAuth.currentUser().then(email=>{document.getElementById('pw-user').value=email});
+document.getElementById('pw-form').addEventListener('submit',async e=>{
   e.preventDefault();
-  const msg=document.getElementById('pw-msg'),n=document.getElementById('pw-new').value;
+  const msg=document.getElementById('pw-msg'),n=document.getElementById('pw-new').value,button=e.currentTarget.querySelector('button[type="submit"]');
+  if(n.length<8){msg.textContent='Le nouveau mot de passe doit contenir au moins 8 caractères.';return}
   if(n!==document.getElementById('pw-new2').value){msg.textContent='Les deux mots de passe ne correspondent pas.';return}
-  const r=HSLAuth.change(document.getElementById('pw-user').value,document.getElementById('pw-old').value,n);
-  msg.textContent=r.ok?'Identifiants mis à jour. Notez-les bien : ils sont propres à ce navigateur.':r.msg;
-  if(r.ok)['pw-old','pw-new','pw-new2'].forEach(id=>document.getElementById(id).value='');
+  button.disabled=true;msg.textContent='Mise à jour…';
+  const result=await window.HSLAuth.changePassword(document.getElementById('pw-old').value,n);
+  msg.textContent=result.ok?'Mot de passe Supabase mis à jour.':result.msg;
+  if(result.ok)['pw-old','pw-new','pw-new2'].forEach(id=>document.getElementById(id).value='');
+  button.disabled=false;
 });
+
+const requestStatus=document.getElementById('requests-status'),requestWrap=document.getElementById('quote-requests');
+async function loadQuoteRequests(){
+  requestStatus.textContent='Chargement des demandes…';requestWrap.innerHTML='';
+  const {data:requests,error}=await window.hslSupabase.from('quote_requests').select('id,created_at,name,phone,project,location,details,status').order('created_at',{ascending:false}).limit(100);
+  if(error){requestStatus.textContent='Erreur de lecture : '+error.message;return}
+  if(!requests.length){requestStatus.textContent='Aucune demande enregistrée pour le moment.';return}
+  requestStatus.textContent=`${requests.length} demande(s) récente(s) (100 maximum affichées).`;
+  requests.forEach(r=>{
+    const date=new Date(r.created_at).toLocaleString('fr-FR');
+    const card=el('div',{class:'lst-item'});
+    const select=el('select');[['new','Nouvelle'],['in_progress','En cours'],['closed','Clôturée']].forEach(([v,label])=>select.append(el('option',{value:v},label)));
+    select.value=r.status;select.addEventListener('change',async()=>{
+      const {error}=await window.hslSupabase.from('quote_requests').update({status:select.value}).eq('id',r.id);
+      if(error){requestStatus.textContent='Erreur de mise à jour : '+error.message;select.value=r.status;}
+      else{r.status=select.value;requestStatus.textContent='Statut de la demande mis à jour.';}
+    });
+    const row=el('div',{class:'row'},el('b',{},`${date} — ${r.name}`),select);
+    card.append(row,el('p',{},`Téléphone : ${r.phone} | Projet : ${r.project} | Lieu : ${r.location}`),el('p',{},r.details));
+    requestWrap.append(card);
+  });
+}
+document.getElementById('refresh-requests').addEventListener('click',loadQuoteRequests);
+loadQuoteRequests();

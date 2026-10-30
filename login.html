@@ -4,7 +4,7 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Connexion | HSL Génie Civil</title>
 <link rel="icon" href="assets/logo-hsl.jpg">
-<link rel="stylesheet" href="styles.css?v=20261023-7">
+<link rel="stylesheet" href="styles.css?v=20261030-adminphotos">
 </head>
 <body class="login-body">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -36,8 +36,8 @@
       <div class="login-badge"><svg class="icon"><use href="#i-lock"/></svg></div>
       <h2>Connexion</h2>
       <p class="login-sub">Entrez vos identifiants pour accéder à l’administration.</p>
-      <label>Identifiant
-        <input id="u" name="username" autocomplete="username" required placeholder="admin" autofocus>
+      <label>Adresse e-mail
+        <input id="u" name="email" type="email" autocomplete="username" required placeholder="nom@entreprise.com" autofocus>
       </label>
       <label>Mot de passe
         <span class="pw"><input id="p" name="password" type="password" autocomplete="current-password" required placeholder="Votre mot de passe"><button type="button" id="toggle" aria-label="Afficher le mot de passe"><svg class="icon"><use href="#i-eye"/></svg></button></span>
@@ -48,16 +48,18 @@
     </form>
   </section>
 </main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
 <script src="auth.js"></script>
 <script>
-  if(HSLAuth.isLogged())location.replace('admin.html');
-  const f=document.getElementById('login-form'),err=document.getElementById('err'),p=document.getElementById('p');
+  (async()=>{if(await HSLAuth.isLogged())location.replace('admin.html')})();
+  const f=document.getElementById('login-form'),err=document.getElementById('err'),p=document.getElementById('p'),submit=f.querySelector('button[type="submit"]');
   document.getElementById('toggle').addEventListener('click',()=>{const s=p.type==='password';p.type=s?'text':'password'});
-  f.addEventListener('submit',e=>{
-    e.preventDefault();
-    const r=HSLAuth.login(document.getElementById('u').value,p.value);
+  f.addEventListener('submit',async e=>{
+    e.preventDefault();submit.disabled=true;err.textContent='Connexion…';
+    const r=await HSLAuth.login(document.getElementById('u').value,p.value);
     if(r.ok){location.href='admin.html'}
-    else{err.textContent=r.msg;f.classList.remove('shake');void f.offsetWidth;f.classList.add('shake');p.select()}
+    else{err.textContent=r.msg;f.classList.remove('shake');void f.offsetWidth;f.classList.add('shake');p.select();submit.disabled=false}
   });
 </script>
 </body></html>

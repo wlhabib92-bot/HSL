@@ -1,6 +1,4 @@
-/* Contenu du site HSL Génie Civil.
-   Ce fichier est généré par la page admin.html (bouton « Télécharger content.js »).
-   Pour publier vos modifications à tous les visiteurs, remplacez ce fichier sur l’hébergement. */
+/* Contenu par défaut et secours hors ligne; les changements sont administrés dans Supabase. */
 window.HSL_CONTENT = {
   "hero": {
     "eyebrow": "Entreprise de BTP à Dakar, Sénégal",
@@ -8,7 +6,8 @@ window.HSL_CONTENT = {
     "title2": "Pour demain.",
     "lead": "HSL Génie Civil accompagne vos projets de construction avec une organisation rigoureuse, des équipes techniques et une attention portée à la qualité d’exécution.",
     "cta1": "Demander un devis",
-    "cta2": "Découvrir nos références"
+    "cta2": "Découvrir nos références",
+    "backgroundImage": ""
   },
   "about": {
     "tag": "Qui sommes-nous ?",
@@ -18,9 +17,24 @@ window.HSL_CONTENT = {
     "p2": "La planification des tâches, la coordination des équipes et le suivi des approvisionnements contribuent à une conduite structurée des travaux, dans le respect des prescriptions du projet.",
     "link": "Découvrir notre approche",
     "principles": [
-      {"icon": "plan", "title": "Organisation", "text": "Coordination des intervenants, préparation et suivi des activités de chantier."},
-      {"icon": "square", "title": "Qualité d’exécution", "text": "Attention portée aux matériaux, aux méthodes de travail et aux prescriptions du projet."},
-      {"icon": "clock", "title": "Maîtrise des délais", "text": "Planification des ouvrages élémentaires et suivi de l’avancement des travaux."}
+      {
+        "icon": "plan",
+        "title": "Organisation",
+        "text": "Coordination des intervenants, préparation et suivi des activités de chantier.",
+        "photo": ""
+      },
+      {
+        "icon": "square",
+        "title": "Qualité d’exécution",
+        "text": "Attention portée aux matériaux, aux méthodes de travail et aux prescriptions du projet.",
+        "photo": ""
+      },
+      {
+        "icon": "clock",
+        "title": "Maîtrise des délais",
+        "text": "Planification des ouvrages élémentaires et suivi de l’avancement des travaux.",
+        "photo": ""
+      }
     ]
   },
   "orgChart": {
@@ -28,14 +42,54 @@ window.HSL_CONTENT = {
     "title": "Une équipe structurée au service de vos projets.",
     "intro": "Une direction engagée et des compétences complémentaires pour accompagner chaque étape de vos travaux.",
     "members": [
-      {"name": "Nom à renseigner", "role": "Président du Conseil d’Administration (PCA)", "icon": "shield", "photo": ""},
-      {"name": "Nom à renseigner", "role": "Directeur Général", "icon": "helmet", "photo": ""},
-      {"name": "Nom à renseigner", "role": "Assistante de direction", "icon": "plan", "photo": ""},
-      {"name": "Nom à renseigner", "role": "Comptable", "icon": "plan", "photo": ""},
-      {"name": "Nom à renseigner", "role": "Ingénieur", "icon": "square", "photo": ""},
-      {"name": "Nom à renseigner", "role": "Directeur Administratif et Financier (DAF)", "icon": "beam", "photo": ""},
-      {"name": "Nom à renseigner", "role": "Ingénieur", "icon": "column", "photo": ""},
-      {"name": "Nom à renseigner", "role": "Juriste", "icon": "shield", "photo": ""}
+      {
+        "name": "Nom à renseigner",
+        "role": "Président du Conseil d’Administration (PCA)",
+        "icon": "shield",
+        "photo": ""
+      },
+      {
+        "name": "Nom à renseigner",
+        "role": "Directeur Général",
+        "icon": "helmet",
+        "photo": ""
+      },
+      {
+        "name": "Nom à renseigner",
+        "role": "Assistante de direction",
+        "icon": "plan",
+        "photo": ""
+      },
+      {
+        "name": "Nom à renseigner",
+        "role": "Comptable",
+        "icon": "plan",
+        "photo": ""
+      },
+      {
+        "name": "Nom à renseigner",
+        "role": "Ingénieur",
+        "icon": "square",
+        "photo": ""
+      },
+      {
+        "name": "Nom à renseigner",
+        "role": "Directeur Administratif et Financier (DAF)",
+        "icon": "beam",
+        "photo": ""
+      },
+      {
+        "name": "Nom à renseigner",
+        "role": "Ingénieur",
+        "icon": "column",
+        "photo": ""
+      },
+      {
+        "name": "Nom à renseigner",
+        "role": "Juriste",
+        "icon": "shield",
+        "photo": ""
+      }
     ]
   },
   "services": {
@@ -44,20 +98,81 @@ window.HSL_CONTENT = {
     "title2": "vos travaux.",
     "intro": "Une organisation adaptée aux besoins du projet et aux différents corps d’état intervenant sur le chantier.",
     "cards": [
-      {"icon": "brick", "title": "Gros œuvre & maçonnerie", "text": "Travaux de gros œuvre, maçonnerie et enduits, suivant les plans et les prescriptions du projet."},
-      {"icon": "roller", "title": "Finitions & revêtements", "text": "Coordination des travaux de revêtement, carrelage, peinture et menuiseries selon le périmètre convenu."},
-      {"icon": "bolt", "title": "Lots techniques", "text": "Organisation et coordination des interventions en électricité, plomberie, climatisation et ventilation, selon le projet."},
-      {"icon": "crane", "title": "Organisation de chantier", "text": "Préparation des équipes, suivi des approvisionnements, coordination et suivi du planning d’exécution."}
+      {
+        "icon": "brick",
+        "title": "Gros œuvre & maçonnerie",
+        "text": "Travaux de gros œuvre, maçonnerie et enduits, suivant les plans et les prescriptions du projet.",
+        "image": "",
+        "elements": [
+          "Implantation et fondations",
+          "Béton armé",
+          "Maçonnerie et élévation",
+          "Enduits"
+        ]
+      },
+      {
+        "icon": "roller",
+        "title": "Finitions & revêtements",
+        "text": "Coordination des travaux de revêtement, carrelage, peinture et menuiseries selon le périmètre convenu.",
+        "image": "",
+        "elements": [
+          "Carrelage et revêtements",
+          "Peinture",
+          "Menuiseries",
+          "Finitions"
+        ]
+      },
+      {
+        "icon": "bolt",
+        "title": "Lots techniques",
+        "text": "Organisation et coordination des interventions en électricité, plomberie, climatisation et ventilation, selon le projet.",
+        "image": "",
+        "elements": [
+          "Électricité",
+          "Plomberie-sanitaire",
+          "Climatisation",
+          "Ventilation / VMC"
+        ]
+      },
+      {
+        "icon": "crane",
+        "title": "Organisation de chantier",
+        "text": "Préparation des équipes, suivi des approvisionnements, coordination et suivi du planning d’exécution.",
+        "image": "",
+        "elements": [
+          "Préparation des équipes",
+          "Suivi des approvisionnements",
+          "Coordination",
+          "Suivi du planning"
+        ]
+      }
     ],
     "elementsTitle": "Les éléments d’un ouvrage en béton armé",
     "elementsSub": "Les quatre notions de base de toute structure.",
     "elements": [
-      {"icon": "column", "title": "Poteau", "text": "Élément vertical qui transmet les charges de la structure jusqu’aux fondations."},
-      {"icon": "beam", "title": "Poutre", "text": "Élément horizontal qui reprend les charges des planchers et les reporte sur les poteaux."},
-      {"icon": "slab", "title": "Dalle", "text": "Plancher en béton qui forme le sol de chaque niveau du bâtiment."},
-      {"icon": "concrete", "title": "Béton armé", "text": "Béton renforcé par des barres d’acier pour résister aux efforts de traction."}
+      {
+        "icon": "column",
+        "title": "Poteau",
+        "text": "Élément vertical qui transmet les charges de la structure jusqu’aux fondations."
+      },
+      {
+        "icon": "beam",
+        "title": "Poutre",
+        "text": "Élément horizontal qui reprend les charges des planchers et les reporte sur les poteaux."
+      },
+      {
+        "icon": "slab",
+        "title": "Dalle",
+        "text": "Plancher en béton qui forme le sol de chaque niveau du bâtiment."
+      },
+      {
+        "icon": "concrete",
+        "title": "Béton armé",
+        "text": "Béton renforcé par des barres d’acier pour résister aux efforts de traction."
+      }
     ],
-    "note": "Les prestations effectivement proposées et leur périmètre sont à confirmer avec HSL Génie Civil avant publication définitive."
+    "note": "Les prestations effectivement proposées et leur périmètre sont à confirmer avec HSL Génie Civil avant publication définitive.",
+    "bannerImage": ""
   },
   "refs": {
     "tag": "Nos références",
@@ -73,8 +188,19 @@ window.HSL_CONTENT = {
     "title1": "Un projet à construire ?",
     "title2": "Commençons ici.",
     "text": "Décrivez votre besoin. Les informations seront préparées dans un message WhatsApp afin que vous puissiez les envoyer directement à HSL Génie Civil.",
-    "benefits": ["Une prise de contact simple", "Les informations essentielles du projet", "Un échange direct avec l’entreprise"],
-    "types": ["Construction neuve", "Gros œuvre / maçonnerie", "Rénovation", "Finitions", "Lots techniques", "Autre demande"]
+    "benefits": [
+      "Une prise de contact simple",
+      "Les informations essentielles du projet",
+      "Un échange direct avec l’entreprise"
+    ],
+    "types": [
+      "Construction neuve",
+      "Gros œuvre / maçonnerie",
+      "Rénovation",
+      "Finitions",
+      "Lots techniques",
+      "Autre demande"
+    ]
   },
   "contact": {
     "tag": "Contact",
