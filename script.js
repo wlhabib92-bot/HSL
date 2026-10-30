@@ -17,12 +17,19 @@ function renderContent(){
 
   const o=C.orgChart;
   const orgCard=(member,lead=false)=>`<article class="org-card${lead?' org-card-lead':''}"><div class="org-avatar">${member.photo?`<img src="${e(member.photo)}" alt="Photo de ${e(member.name||member.role)}">`:ic(member.icon||'user')}</div><div class="org-card-copy"><span class="org-role">${e(member.role)}</span><h3>${e(member.name||'Nom à renseigner')}</h3></div></article>`;
-  const orgMembers=o.members||[];
-  $('#organigramme .wrap').innerHTML=`<div class="section-tag">${ic('user')} ${e(o.tag)}</div><div class="org-heading"><h2>${e(o.title)}</h2><p>${e(o.intro)}</p></div><div class="org-chart-scroll" role="region" aria-label="Organigramme défilant" tabindex="0"><p class="org-scroll-hint">Faites glisser l’organigramme pour voir toute l’équipe.</p><div class="org-chart" aria-label="Organigramme de l’entreprise">${orgMembers.slice(0,3).map((m,i)=>`<div class="org-tier${i===2?' org-tier-assistant':''}">${orgCard(m,true)}</div>`).join('')}${orgMembers.length>3?`<div class="org-team">${orgMembers.slice(3).map(m=>orgCard(m)).join('')}</div>`:''}</div></div>`;
-  const orgScroller=$('#organigramme .org-chart-scroll');
-  if(orgScroller&&window.matchMedia('(max-width: 900px)').matches){
-    requestAnimationFrame(()=>{orgScroller.scrollLeft=(orgScroller.scrollWidth-orgScroller.clientWidth)/2});
-  }
+  const orgMembers=o.members||[],assigned=new Set();
+  const takeMember=(pattern,fallbackIndex)=>{
+    let member=orgMembers.find(m=>!assigned.has(m)&&pattern.test(m.role||''));
+    if(!member&&orgMembers[fallbackIndex]&&!assigned.has(orgMembers[fallbackIndex]))member=orgMembers[fallbackIndex];
+    if(!member)member=orgMembers.find(m=>!assigned.has(m));
+    if(member)assigned.add(member);
+    return member;
+  };
+  const director=takeMember(/directeur\s+g[ée]n[ée]ral/i,1);
+  const pca=takeMember(/président.*conseil.*administration|\bpca\b/i,0);
+  const assistant=takeMember(/assistante\s+de\s+direction/i,2);
+  const orgTeam=orgMembers.filter(m=>!assigned.has(m));
+  $('#organigramme .wrap').innerHTML=`<div class="section-tag">${ic('user')} ${e(o.tag)}</div><div class="org-heading"><h2>${e(o.title)}</h2><p>${e(o.intro)}</p></div><div class="org-chart-scroll" role="region" aria-label="Organigramme de l’entreprise" tabindex="0"><p class="org-scroll-hint">Faites glisser l’organigramme pour voir toute l’équipe.</p><div class="org-chart" aria-label="Organigramme de l’entreprise"><div class="org-row-general">${director?orgCard(director,true):''}</div><div class="org-management-row">${pca?`<div class="org-management-node">${orgCard(pca,true)}</div>`:''}${assistant?`<div class="org-management-node">${orgCard(assistant,true)}</div>`:''}</div>${orgTeam.length?`<div class="org-team">${orgTeam.map(m=>orgCard(m)).join('')}</div>`:''}</div></div>`;
 
   const s=C.services;
   const bannerImage=s.bannerImage?`<img class="services-banner-photo" src="${e(s.bannerImage)}" alt="" aria-hidden="true">`:'';

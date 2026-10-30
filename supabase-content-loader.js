@@ -19,7 +19,7 @@ function mergeDefaults(defaults, remote) {
     console.warn('Supabase indisponible; contenu local utilisé.', error);
   } finally {
     const script = document.createElement('script');
-    script.src = 'script.js?v=20261030-media-services';
+    script.src = 'script.js?v=20261030-orgchart-layout';
     document.body.appendChild(script);
   }
 })();
