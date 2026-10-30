@@ -50,7 +50,10 @@ function renderContent(){
   if(serviceElements)selectService('all');
 
   const r=C.refs;
-  const slots=r.items.length?r.items.map(it=>`<article class="reference-slot${it.image?' has-photo':''}">${it.image?`<img class="reference-photo" src="${e(it.image)}" alt="Photo du projet ${e(it.title)} à ${e(it.location)}" loading="lazy">`:ic('helmet','slot-ico')}<div class="reference-copy"><span>${e(it.location)}</span><strong>${e(it.title)}</strong>${it.description?`<p>${e(it.description)}</p>`:''}</div></article>`).join('')
+  const slots=r.items.length?r.items.map((it,i)=>{
+    const projectTitle=String(it.title||'').trim()||`Projet ${i+1}`;
+    return `<article class="reference-slot${it.image?' has-photo':''}">${it.image?`<img class="reference-photo" src="${e(it.image)}" alt="Photo de ${e(projectTitle)} à ${e(it.location)}" loading="lazy">`:ic('helmet','slot-ico')}<div class="reference-copy"><span>${e(it.location)}</span><strong>${e(projectTitle)}</strong>${it.description?`<p>${e(it.description)}</p>`:''}</div></article>`;
+  }).join('')
    :['helmet','crane','slab'].map((n,i)=>`<article class="reference-slot">${ic(n,'slot-ico')}<div class="reference-copy"><span>Photo à ajouter</span><strong>Projet / chantier 0${i+1}</strong></div></article>`).join('');
   $('#realisations .wrap').innerHTML=`<div class="section-heading"><div><div class="section-tag">${ic('shield')} ${e(r.tag)}</div><h2>${e(r.title1)}<br><em>${e(r.title2)}</em></h2></div><p>${e(r.intro)}</p></div>`
    +(r.items.length?'':`<div class="reference-notice"><div class="ico-tile">${ic('plus')}</div><div><h3>${e(r.noticeTitle)}</h3><p>${e(r.noticeText)}</p><a class="text-link" href="#contact">Envoyer vos références ${ic('arrow-r')}</a></div></div>`)

@@ -139,20 +139,43 @@ function stringListField(obj,key,label){
   return box;
 }
 /* Liste d’objets (ajout / suppression) */
-function listOf(arr,title,itemLabel,fields,blank){
+function listOf(arr,title,itemLabel,fields,blank,options={}){
   const wrap=el('div',{class:'lst'},el('h3',{},title));
   const body=el('div');wrap.append(body);
   function draw(){
     body.innerHTML='';
     arr.forEach((it,i)=>{
-      const grid=el('div',{class:'fgrid'});fields.forEach(f=>grid.append(field(it,f[0],f[1],f[2])));
+      const fallbackLabel=itemLabel+' '+(i+1);
+      if(options.titleKey&&!String(it[options.titleKey]||'').trim())it[options.titleKey]=fallbackLabel;
+      const heading=el('b',{},options.titleKey?(String(it[options.titleKey]||'').trim()||fallbackLabel):fallbackLabel);
+      const grid=el('div',{class:'fgrid'});
+      fields.forEach(f=>{
+        const control=field(it,f[0],f[1],f[2]);
+        if(options.titleKey===f[0]){
+          const input=control.querySelector('input,textarea');
+          if(input)input.addEventListener('input',()=>{heading.textContent=input.value.trim()||fallbackLabel;});
+        }
+        grid.append(control);
+      });
       body.append(el('div',{class:'lst-item'},
-        el('div',{class:'row'},el('b',{},itemLabel+' '+(i+1)),el('button',{type:'button',class:'abtn small danger',onclick:()=>{if(confirm('Supprimer cet élément ?')){arr.splice(i,1);save();draw()}}},'Supprimer')),grid));
+        el('div',{class:'row'},heading,el('button',{type:'button',class:'abtn small danger',onclick:()=>{if(confirm('Supprimer cet élément ?')){arr.splice(i,1);save();draw()}}},'Supprimer')),grid));
     });
     if(!arr.length)body.append(el('p',{class:'admin-note'},'Aucun élément. Cette partie ne s’affichera pas sur le site.'));
   }
   draw();
-  wrap.append(el('button',{type:'button',class:'abtn small',onclick:()=>{arr.push(clone(blank));save();draw()}},'+ Ajouter'));
+  wrap.append(el('button',{type:'button',class:'abtn small',onclick:()=>{
+    const item=clone(blank);
+    if(options.titleKey){
+      const prefix=options.defaultTitlePrefix||itemLabel;
+      let nextNumber=arr.length+1;
+      arr.forEach(existing=>{
+        const match=String(existing[options.titleKey]||'').match(/(\d+)\s*$/);
+        if(match)nextNumber=Math.max(nextNumber,Number(match[1])+1);
+      });
+      item[options.titleKey]=`${prefix} ${nextNumber}`;
+    }
+    arr.push(item);save();draw();
+  }},'+ Ajouter'));
   return wrap;
 }
 /* Liste de textes simples */
@@ -205,7 +228,7 @@ function build(){
     section('Réalisations','shield','refs','refs',grid(
       field(D.refs,'tag','Étiquette de section'),field(D.refs,'title1','Titre — ligne 1'),field(D.refs,'title2','Titre — ligne 2 (en or)'),field(D.refs,'intro','Texte d’introduction','area'),
       field(D.refs,'noticeTitle','Titre du message « galerie vide »'),field(D.refs,'noticeText','Texte du message « galerie vide »','area')),
-      listOf(D.refs.items,'Projets réalisés (ajoutez uniquement des références vérifiées)','Projet',[['title','Nom du projet'],['location','Lieu'],['description','Description','area'],['image','Photo','image']],{title:'',location:'',description:'',image:''})),
+      listOf(D.refs.items,'Projets réalisés (ajoutez uniquement des références vérifiées)','Projet',[['title','Nom / numéro affiché sur la carte (modifiable)'],['location','Lieu'],['description','Description','area'],['image','Photo','image']],{title:'',location:'',description:'',image:''},{titleKey:'title',defaultTitlePrefix:'Projet'})),
 
     section('Demande de devis','plan','quote','quote',grid(
       field(D.quote,'tag','Étiquette de section'),field(D.quote,'title1','Titre — ligne 1'),field(D.quote,'title2','Titre — ligne 2 (en or)'),field(D.quote,'text','Texte d’introduction','area')),
