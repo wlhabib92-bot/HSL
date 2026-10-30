@@ -847,9 +847,9 @@ body{background:#f7f6f2}
 
 /* Le titre reste sur la photo; l’image garde son cadrage complet et un léger retrait. */
 #accueil .hero-background{
-  inset:2%;
-  width:96%;
-  height:96%;
+  inset:5%;
+  width:90%;
+  height:90%;
   object-fit:contain;
 }
 @media(max-width:900px){
